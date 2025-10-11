@@ -27,8 +27,7 @@ if ("webkitSpeechRecognition" in window) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": "Bearer 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" // <-- REPLACE THIS
-          },
+\          },
           body: JSON.stringify({
             model: "gpt-4o-mini",
             messages: [
