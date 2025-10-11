@@ -3,25 +3,6 @@ const transcriptBox = document.getElementById("transcript");
 const answerBox = document.getElementById("answer");
 const status = document.getElementById("status");
 
-// --- TRIGGER PHRASES ---
-const triggers = [
-  "toss up math",
-  "toss up physics",
-  "bonus math",
-  "bonus physics"
-];
-
-// --- HELPERS ---
-function findTrigger(transcript) {
-  transcript = transcript.trim().toLowerCase();
-  for (const trigger of triggers) {
-    if (transcript.startsWith(trigger)) {
-      return trigger;
-    }
-  }
-  return null;
-}
-
 // --- SPEECH RECOGNITION ---
 let recognition;
 if ("webkitSpeechRecognition" in window) {
@@ -37,51 +18,43 @@ if ("webkitSpeechRecognition" in window) {
     }
     transcriptBox.value = text;
 
-    const trigger = findTrigger(text);
-    if (trigger) {
-      status.textContent = `🧠 Solving: ${trigger.toUpperCase()}...`;
-      // Extract question (everything after trigger phrase)
-      const question = text.substring(trigger.length).trim();
-      transcriptBox.value = question;
-
-      // Only call OpenAI if there's a question
-      if (question) {
-        answerBox.textContent = "";
-        try {
-          const res = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": "Bearer YOUR_OPENAI_API_KEY" // <-- REPLACE THIS
-            },
-            body: JSON.stringify({
-              model: "gpt-4o-mini",
-              messages: [
-                {
-                  role: "system",
-                  content: "You are a Science Bowl assistant. Answer questions concisely, quickly, and accurately."
-                },
-                {
-                  role: "user",
-                  content: question
-                }
-              ],
-              max_tokens: 150
-            })
-          });
-          const data = await res.json();
-          const answer = data.choices?.[0]?.message?.content || "No answer found.";
-          answerBox.textContent = answer;
-          status.textContent = "✅ Answer ready!";
-        } catch (err) {
-          console.error(err);
-          status.textContent = "❌ Error: " + err.message;
-        }
+    const question = text.trim();
+    if (question) {
+      status.textContent = `🧠 Solving question...`;
+      answerBox.textContent = "";
+      try {
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer YOUR_OPENAI_API_KEY" // <-- REPLACE THIS
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content: "You are a Science Bowl assistant. Answer questions concisely, quickly, and accurately."
+              },
+              {
+                role: "user",
+                content: question
+              }
+            ],
+            max_tokens: 150
+          })
+        });
+        const data = await res.json();
+        const answer = data.choices?.[0]?.message?.content || "No answer found.";
+        answerBox.textContent = answer;
+        status.textContent = "✅ Answer ready!";
+      } catch (err) {
+        console.error(err);
+        status.textContent = "❌ Error: " + err.message;
       }
     } else {
-      status.textContent = "Waiting for TOSS UP or BONUS Math/Physics question...";
+      status.textContent = "Waiting for a question...";
       answerBox.textContent = "";
-      // transcriptBox.value = ""; // (Optionally clear transcript if no trigger)
     }
   };
 
@@ -96,7 +69,7 @@ if ("webkitSpeechRecognition" in window) {
 
   // Start listening immediately
   recognition.start();
-  status.textContent = "Waiting for TOSS UP or BONUS Math/Physics question...";
+  status.textContent = "Waiting for a question...";
 } else {
   status.textContent = "Speech Recognition not supported in this browser.";
 }
