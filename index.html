@@ -1,18 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Science Bowl Voice AI</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>Science Bowl Reader</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- MathJax for LaTeX -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-  <h1>🎙 Science Bowl AI Assistant</h1>
-  <p id="status">Waiting for TOSS UP or BONUS Math/Physics question...</p>
-  <textarea id="transcript" placeholder="Your Science Bowl question will appear here..." readonly></textarea>
-  <div id="answerBox">
-    <h2>AI Answer:</h2>
-    <pre id="answer"></pre>
+  <div id="app">
+    <!-- SIDEBAR -->
+    <aside id="sidebar">
+      <h1>Science Bowl Reader</h1>
+
+      <section>
+        <h2>Tournaments</h2>
+        <div id="tournament-list" class="scroll-box"></div>
+        <button id="show-import" class="primary small">+ Add question</button>
+      </section>
+
+      <section>
+        <h3>Subjects</h3>
+        <div id="subject-filters">
+          <label><input type="checkbox" value="math" checked> Math</label>
+          <label><input type="checkbox" value="physics" checked> Physics</label>
+          <label><input type="checkbox" value="energy" checked> Energy</label>
+          <label><input type="checkbox" value="biology" checked> Biology</label>
+          <label><input type="checkbox" value="chemistry" checked> Chemistry</label>
+        </div>
+      </section>
+
+      <section>
+        <h3>Rounds</h3>
+        <div class="round-row">
+          <label>From <input id="round-min" type="number" min="1" value="1"></label>
+          <label>To <input id="round-max" type="number" min="1" value="8"></label>
+        </div>
+      </section>
+
+      <section>
+        <h3>Question types</h3>
+        <label><input type="checkbox" id="include-tossups" checked> Tossups</label>
+        <label><input type="checkbox" id="include-bonuses" checked> Bonuses</label>
+      </section>
+
+      <section>
+        <h3>Reading speed</h3>
+        <input id="speed-slider" type="range" min="80" max="600" step="10" value="250">
+        <div id="speed-label">250 ms / word</div>
+        <p class="hint">Tip: press <b>n</b> for next question (only after reading ends).</p>
+      </section>
+    </aside>
+
+    <!-- MAIN PANEL -->
+    <main id="main">
+      <div id="meta-bar">
+        <span id="current-meta"></span>
+        <span id="progress"></span>
+      </div>
+
+      <div id="question-box">
+        <div id="question"></div>
+      </div>
+
+      <div id="answer-ui"></div>
+      <div id="feedback"></div>
+
+      <div id="controls">
+        <button id="prev-btn">◀ Prev</button>
+        <button id="replay-btn">Replay</button>
+        <button id="next-btn" class="primary">Next (n)</button>
+        <span id="status"></span>
+      </div>
+    </main>
   </div>
+
+  <!-- IMPORT MODAL -->
+  <div id="import-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Add a question</h2>
+      <p>Paste 1 question in this format:</p>
+      <pre class="example">
+Subject: physics
+Tournament: MIT 2025
+Round: 1
+Number: 3
+Type: tossup
+Format: short
+
+Question:
+A particle moves such that its position is given by $x(t) = t^2 + 3t$.
+What is its velocity at $t = 2$?
+
+Answer:
+7
+      </pre>
+      <textarea id="import-text" placeholder="Paste question text here..."></textarea>
+      <div class="modal-actions">
+        <button id="import-cancel">Cancel</button>
+        <button id="import-add" class="primary">Add to bank</button>
+      </div>
+      <div id="import-status"></div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
