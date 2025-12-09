@@ -7,7 +7,6 @@ const questions = [
 // AVES RR 1 — Round 1
 // =========================
 
-const avesRR1Questions = [
   // 1
   {
     id: "aves-rr1-r1-math-tu1",
