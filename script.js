@@ -9,60 +9,7 @@ const AnswerType = {
   MC: "mc",
 };
 
-// ===== QUESTION BANK =====
-// Add your own questions here.
-// Use LaTeX like $x^2 + y^2 = 1$ in question text.
-const questions = [
-  {
-    id: "mit-phys-r1-tu1",
-    subject: "physics",
-    tournament: "MIT 2025",
-    round: 1,
-    number: 1,
-    type: QuestionType.TOSSUP,
-    answerType: AnswerType.SHORT,
-    choices: null,
-    question:
-      "In SI units, what is the approximate value of the acceleration due to gravity $g$ near Earth's surface?",
-    answer: "9.8 m/s^2",
-    acceptableAnswers: ["9.8", "9.81", "9.8 meters per second squared"],
-  },
-  {
-    id: "mit-math-r1-tu2",
-    subject: "math",
-    tournament: "MIT 2025",
-    round: 1,
-    number: 2,
-    type: QuestionType.TOSSUP,
-    answerType: AnswerType.SHORT,
-    choices: null,
-    question:
-      "Compute $\\dfrac{4}{3} + \\dfrac{5}{6}$ and give your answer as an improper fraction.",
-    answer: "13/6",
-    acceptableAnswers: ["13/6", "2 1/6", "2.1667"],
-  },
-  {
-    id: "mit-math-r1-tu3",
-    subject: "math",
-    tournament: "MIT 2025",
-    round: 1,
-    number: 3,
-    type: QuestionType.TOSSUP,
-    answerType: AnswerType.MC,
-    // Choices will be rendered as W/X/Y/Z buttons
-    choices: [
-      "2",
-      "3",
-      "4",
-      "5",
-    ],
-    question:
-      "What is the derivative of $x^2$?\n\nW) 2x\nX) x\nY) x^2\nZ) 0",
-    // Correct letter:
-    answer: "W",
-    acceptableAnswers: ["w", "W", "2x"],
-  },
-];
+
 
 // ===== STATE =====
 let currentTournament = null;
