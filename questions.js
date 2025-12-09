@@ -1858,7 +1858,7 @@ question:
 "In which of the following compounds would hydrogen not have an oxidation number of $+1$?\n\nW) LiOH\nX) Al$_2$H$_6$\nY) H$_3$PO$_4$\nZ) H$_2$S",
 answer: "X",
 acceptableAnswers: ["X", "x", "al2h6", "aluminum hydride"],
-}
+},
 {
 id: "aves-rr4-r1-math-tu1",
 subject: "math",
