@@ -9,8 +9,6 @@ const AnswerType = {
   MC: "mc",
 };
 
-
-
 // ===== STATE =====
 let currentTournament = null;
 let filteredQuestions = [];
@@ -21,7 +19,7 @@ let canAdvance = false;
 let readTimer = null;
 let readingDelay = 250; // ms per word
 
-// DOM elements
+// ===== DOM ELEMENTS =====
 const tournamentListEl = document.getElementById("tournament-list");
 const subjectFiltersEl = document.getElementById("subject-filters");
 const roundMinEl = document.getElementById("round-min");
@@ -52,9 +50,17 @@ const importAddBtn = document.getElementById("import-add");
 
 // ===== INIT =====
 function init() {
+  if (!Array.isArray(questions)) {
+    console.error("questions.js is not loaded or 'questions' is not an array.");
+    if (statusEl) {
+      statusEl.textContent = "Error: question bank not loaded.";
+    }
+    return;
+  }
+
   buildTournamentList();
   attachEventListeners();
-  // Default to first tournament
+
   const tournaments = getUniqueTournaments();
   if (tournaments.length > 0) {
     setCurrentTournament(tournaments[0]);
@@ -89,19 +95,31 @@ function buildTournamentList() {
 
 function setCurrentTournament(tournament) {
   currentTournament = tournament;
+
   // Highlight selected
   Array.from(tournamentListEl.querySelectorAll("button")).forEach((btn) => {
     btn.classList.toggle("active", btn.textContent === tournament);
   });
+
   updateFilter();
 }
 
 function getSelectedSubjects() {
-  return Array.from(subjectFiltersEl.querySelectorAll("input[type=checkbox]"))
+  const checked = Array.from(
+    subjectFiltersEl.querySelectorAll("input[type=checkbox]")
+  )
     .filter((cb) => cb.checked)
     .map((cb) => cb.value);
+
+  // If somehow nothing is checked, default to "all subjects in questions"
+  if (checked.length === 0) {
+    return [...new Set(questions.map((q) => q.subject))];
+  }
+
+  return checked;
 }
 
+// ===== FILTERING =====
 function updateFilter() {
   if (!currentTournament) {
     filteredQuestions = [];
@@ -119,14 +137,14 @@ function updateFilter() {
     if (q.tournament !== currentTournament) return false;
     if (!subjects.includes(q.subject)) return false;
     if (q.round < minR || q.round > maxR) return false;
-    if (
-      !(
-        (includeTossups && q.type === QuestionType.TOSSUP) ||
-        (includeBonuses && q.type === QuestionType.BONUS)
-      )
-    ) {
-      return false;
-    }
+
+    const isTossup = q.type === QuestionType.TOSSUP;
+    const isBonus = q.type === QuestionType.BONUS;
+    const typeAllowed =
+      (includeTossups && isTossup) || (includeBonuses && isBonus);
+
+    if (!typeAllowed) return false;
+
     return true;
   });
 
@@ -143,6 +161,7 @@ function showNoQuestions() {
   clearInterval(readTimer);
   isReading = false;
   canAdvance = false;
+
   questionEl.textContent = "No questions match the current filters.";
   answerUIEl.innerHTML = "";
   feedbackEl.textContent = "";
@@ -162,11 +181,13 @@ function showCurrentQuestion() {
   feedbackEl.textContent = "";
   buildAnswerUI(q);
 
-  // meta
-  currentMetaEl.textContent = `${q.tournament} • Round ${q.round} • ${
-    q.subject[0].toUpperCase() + q.subject.slice(1)
-  } • ${q.type.toUpperCase()} #${q.number}`;
+  // Meta line
+  const subjectLabel =
+    q.subject && q.subject.length
+      ? q.subject[0].toUpperCase() + q.subject.slice(1)
+      : "Unknown";
 
+  currentMetaEl.textContent = `${q.tournament} • Round ${q.round} • ${subjectLabel} • ${q.type.toUpperCase()} #${q.number}`;
   progressEl.textContent = `${currentIndex + 1} / ${filteredQuestions.length}`;
 
   readQuestion(q);
@@ -178,12 +199,23 @@ function readQuestion(q) {
   canAdvance = false;
   statusEl.textContent = "Reading...";
 
-  const fullText = q.question;
-  const words = fullText.split(/\s+/);
+  const fullText = q.question || "";
+  const words = fullText.split(/\s+/).filter(Boolean);
   let idx = 0;
 
-  // Build gradually as plain text first
   questionEl.textContent = "";
+
+  // No words? Just show it immediately
+  if (words.length === 0) {
+    questionEl.innerHTML = fullText;
+    if (window.MathJax) {
+      MathJax.typesetPromise([questionEl]);
+    }
+    isReading = false;
+    canAdvance = true;
+    statusEl.textContent = "Done. Press Next or 'n'.";
+    return;
+  }
 
   readTimer = setInterval(() => {
     if (idx >= words.length) {
@@ -192,13 +224,14 @@ function readQuestion(q) {
       canAdvance = true;
       statusEl.textContent = "Done. Press Next or 'n'.";
 
-      // After done, render full LaTeX version
+      // Replace with full text so MathJax can render LaTeX
       questionEl.innerHTML = fullText;
       if (window.MathJax) {
         MathJax.typesetPromise([questionEl]);
       }
       return;
     }
+
     questionEl.textContent += (idx === 0 ? "" : " ") + words[idx];
     idx++;
   }, readingDelay);
@@ -290,10 +323,12 @@ function checkAnswer(userInput, q) {
       const ansNorm = normalizeText(ans);
       const ansNum = parseFractionOrNumber(ansNorm);
 
+      // numeric comparison (fractions, decimals, mixed)
       if (userNum !== null && ansNum !== null) {
         return Math.abs(userNum - ansNum) < 1e-3;
       }
 
+      // text comparison
       return (
         ansNorm === userNorm ||
         ansNorm.includes(userNorm) ||
@@ -331,9 +366,7 @@ function parsePastedQuestion(text) {
   const lines = text.split("\n").map((l) => l.trim());
   const get = (label) => {
     const prefix = label.toLowerCase() + ":";
-    const line = lines.find((l) =>
-      l.toLowerCase().startsWith(prefix)
-    );
+    const line = lines.find((l) => l.toLowerCase().startsWith(prefix));
     return line ? line.slice(prefix.length).trim() : "";
   };
 
@@ -341,15 +374,18 @@ function parsePastedQuestion(text) {
   const tournament = get("Tournament") || "Custom";
   const round = Number(get("Round")) || 1;
   const number = Number(get("Number")) || 1;
+
   const typeStr = get("Type").toLowerCase();
   const type =
     typeStr === "bonus" ? QuestionType.BONUS : QuestionType.TOSSUP;
+
   const formatStr = get("Format").toLowerCase();
   const answerType =
     formatStr === "mc" ? AnswerType.MC : AnswerType.SHORT;
 
   const qStart = lines.findIndex((l) => l.toLowerCase() === "question:");
   const aStart = lines.findIndex((l) => l.toLowerCase() === "answer:");
+
   if (qStart === -1 || aStart === -1 || aStart <= qStart) {
     throw new Error("Could not find 'Question:' and 'Answer:' sections.");
   }
@@ -416,7 +452,7 @@ function attachEventListeners() {
   replayBtn.addEventListener("click", replayQuestion);
   nextBtn.addEventListener("click", nextQuestion);
 
-  // Keyboard shortcut: n for next (only when not typing in input)
+  // Keyboard shortcut: n for next (only when not typing in input/textarea)
   document.addEventListener("keydown", (e) => {
     const tag = document.activeElement.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA") return;
@@ -447,7 +483,9 @@ function attachEventListeners() {
       const q = parsePastedQuestion(text);
       questions.push(q);
       importStatusEl.textContent = "✅ Question added.";
-      buildTournamentList(); // in case new tournament
+
+      // Rebuild tournaments in case it's a new one
+      buildTournamentList();
       if (!currentTournament) {
         setCurrentTournament(q.tournament);
       } else {
@@ -466,5 +504,9 @@ function attachEventListeners() {
   });
 }
 
-// ===== START =====
-init();
+// ===== STARTUP HOOK =====
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
